@@ -79,12 +79,8 @@ class Controller{
 
     }
 
-    emmitOne(){
-        console.log('emitted one')
-    }
-
-    emitTwo(){
-        console.log('emitted two')
+    listen(){
+        this.connection.listen()
     }
 
     connect(){
