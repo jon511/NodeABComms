@@ -1,119 +1,96 @@
 
-const {Controller, LogixTag} = require('./controller')
 const net = require('net')
-
-function intToBytesLittleEndian(val) {
-    bytes = []
-    bytes[0] = val & 0x000000ff
-    bytes[1] = (val & 0x0000ff00) >> 8
-    bytes[2] = (val & 0x00ff0000) >> 16
-    bytes[3] = (val & 0x7f000000) >> 24
-
-    return bytes
-}
-
-var server = net.createServer(function(socket) {
-    console.log(socket.remoteAddress + ":" + socket.remoteMRTCPPort)
-    //socket.write('Echo server\r\n');
-    // socket.pipe(socket);
-
-    socket.on('data', (data) => {
-
-        if (data[0] === 0x65){
-            let arr = [...data]
-
-            let sessonID = [0x66, 0x00, 0x6c, 0x00]
-
-            arr[4] = 0x66
-            arr[5] = 0x00
-            arr[6] = 0x6c
-            arr[7] = 0x00
-
-            console.log(new Buffer(arr))
-
-            socket.write(new Buffer(arr))
-        }
-
-        if (data[0] === 0x6f){
-            let arr = [...data]
-
-            arr[2] = 0x14
-
-            arr[38] = 0x04
-            arr[39] = 0x00
-            arr[40] = 0xcd
-            arr[41] = 0x00
-            arr[42] = 0x00
-            arr[43] = 0x00
-
-            let len = arr[48]
-            console.log(len)
-
-            let newArr = arr.slice(50, 50 + len)
-
-            const tagLen = newArr[1]
-
-            console.log(tagLen)
-
-            const dataTypeStart = (tagLen * 2) + 2
-            console.log(dataTypeStart)
-            let dataType = newArr[dataTypeStart]
-
-            let dataLength = newArr[dataTypeStart + 2]
-
-            console.log(dataType)
-            console.log(dataLength)
-
-            let dataValues = newArr.slice(dataTypeStart + 4, dataTypeStart + 4 + (dataLength *2))
+const binary = require('./binaryConverter')
+const {Controller, DataType} = require('./controller')
+const {LogixController} = require('./LogixController')
+const {LogixTag} = require('./LogixTag')
+const {LogixTagList} = require('./LogixTagList')
+const { LogixListener } = require('./LogixMessageListener')
 
 
-            let values = []
+let l = new LogixController('10.50.201.116', 44818)
+l.connect()
+l.connection.setTimeout(5000)
+let slcTag1 = new LogixTag('N199:90', DataType.INT)
+slcTag1.controller = l
+slcTag1.read()
 
-            for (let i in dataValues) {
-                if (i % 2 === 0){
-                    values.push((dataValues[i + 1] << 8) + dataValues[i])
-                }
-            }
-
-
-            const tagNameArr = newArr.slice(4, 4 + tagLen)
-            let tagName = ""
-            for (let i in tagNameArr){
-                tagName += String.fromCharCode(tagNameArr[i])
-            }
-
-            console.log(tagName)
-            console.log(values)
-
-            // console.log(newArr)
-
-            // console.log(new Buffer(arr.slice(0,44)))
-
-            socket.write(new Buffer(arr.slice(0,44)))
-
-        }
-
-        socket.on('error', (err) => {
-            console.log(err)
-        })
-
-
-
-        console.log(data)
-    })
-});
-
-server.listen(44818, '10.50.71.142');
-
-
-
-// console.log(intToBytesLittleEndian(287))
-// console.log(intToBytesLittleEndian(32767))
-// console.log(intToBytesLittleEndian(256))
-
-// let controller = new Controller("10.50.193.55", 44818)
-// controller.connect()
-
-// tag = new LogixTag('rate')
+// let l = new LogixController('10.50.193.55', 44818)
+// l.connect()
+// l.connection.setTimeout(3000)
+// let newTag1 = new LogixTag('rate', DataType.DINT)
+// let newTag2 = new LogixTag('rateInt', DataType.INT)
+// let newTag3 = new LogixTag('rateArray', DataType.DINT)
+// newTag3.length = 3
+// newTag3.controller = l
 //
-// tag.read()
+// let tagGroup = new LogixTagList()
+// tagGroup.add(newTag1)
+// tagGroup.add(newTag2)
+// tagGroup.controller = l
+//
+//
+// l.on('connected', ()=>{
+//
+//     newTag3.length = 2
+//     newTag3.value = [2500, 3500]
+//     // newTag3.write()
+//     l.writeTag(newTag3)
+//     newTag1.value = 108
+//     newTag2.value = 109
+//
+//     tagGroup.writeAll()
+// })
+//
+//
+// l.on('readComplete', (data) => {
+//     console.log('read complete')
+//     console.log(data)
+//
+//     for (let i in l.activeTagList){
+//         console.log(l.activeTagList[i].name)
+//         if (l.activeTagList[i].cipSequenceID === binary.ConvertTwoBytesLittleEndianToInt(data.slice(0, 2))){
+//             if (data[6] === 196){
+//                 l.activeTagList[i].value = binary.ConvertFourBytesLittleEndianToInt(data.slice(8))
+//                 // l.activeTagList.splice(i,1)
+//                 // console.log(i)
+//             }else if (data[6] === 195){
+//                 l.activeTagList[i].value = binary.ConvertTwoBytesLittleEndianToInt(data.slice(8))
+//                 // l.activeTagList.splice(i,1)
+//                 // console.log(i)
+//             }
+//         }
+//     }
+//
+//     console.log(newTag1.value)
+//     console.log(newTag2.value
+//     )
+//
+//     console.log('read complete')
+//     console.log(l.sequenceCounter)
+//     if (l.sequenceCounter > 10){
+//         tagGroup.stopScan()
+//     }
+// })
+//
+// l.on('timeout', () => {
+//     l.connection.end()
+//     console.log('timeout')
+// })
+
+
+
+// let Listener = new LogixListener()
+// // Listener.server.listen(44818, '10.53.2.200')
+//
+// // Listener.server.listen(44818, '10.50.71.140')
+// Listener.server.listen(2222, '10.50.71.140')
+// Listener.on('mofo', (err)=>{
+//     console.log('this is a mofo')
+//     console.log(err)
+//
+// })
+
+
+
+
