@@ -109,24 +109,9 @@ class LogixController extends EventEmitter{
 
     }
 
-    readTag(tagName){
+    readTag(tag){
 
-        let requestService = [0x4c]
-        let requestPath = [0x91, tagName.length]
-        for (let c in tagName){
-            requestPath.push(tagName.charCodeAt(c))
-        }
-        if (requestPath.length % 2 !== 0) {
-            requestPath.push(0x00)
-        }
-        let requestPathSize = [requestPath.length / 2]
-        let requestData = [0x01, 0x00]
-
-        let sendData = requestService.concat(requestPathSize, requestPath, requestData)
-        this.contextPointer = 0
-        let data = this.build_EIP_CIP_Header(sendData)
-        // return data
-        this.connection.write(data)
+        tag.read()
     }
 
 

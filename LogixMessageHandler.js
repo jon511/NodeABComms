@@ -1,3 +1,6 @@
+let {LogixController} = require('./LogixController')
+let {LogixTag, DataType} = require('./LogixTag')
+
 
 /**
  * Message handler process spawned from LogixMessageListener.
@@ -16,11 +19,33 @@ process.on('message', (data) => {
 
 
 
+    console.log(data)
+    console.log('here is the response in a separate thread')
+
     /**
      * end of your code
      */
 
-    process.exit()
+
+
+    setTimeout(()=>{
+
+        let controller = new LogixController(data.senderAddress, 44818)
+        controller.connect()
+        let tag = new LogixTag('rateInt', DataType.INT)
+        tag.value = data.tag.value[0]
+        tag.controller = controller
+        // controller.writeTag(tag)
+
+        controller.on('connected', ()=>{
+            controller.writeTag(tag)
+            console.log(tag)
+            process.exit()
+        })
+
+    }, 2000)
+
+    // process.exit()
 
 })
 

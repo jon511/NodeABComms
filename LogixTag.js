@@ -69,6 +69,10 @@ class LogixTag extends EventEmitter{
 
     write(){
 
+        if (!this.controller.isConnected){
+            console.log('controller not connected')
+        }
+
         //TODO: verification before writing tag
 
 
@@ -135,7 +139,7 @@ const DataType = {
     REAL: 0xca,
     DWORD: 0xd3,
     LINT: 0xc5,
-    STRING: 0x0a,
+    STRING: 0xa0,
 }
 
 module.exports = {LogixTag, DataType}

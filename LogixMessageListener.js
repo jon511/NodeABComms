@@ -76,6 +76,7 @@ class LogixListener extends EventEmitter{
                     let arr = [...data]
 
                     arr[2] = 0x14
+                    arr[3] = 0x00
 
                     arr[38] = 0x04
                     arr[39] = 0x00
@@ -86,6 +87,9 @@ class LogixListener extends EventEmitter{
 
                     //send response
                     socket.write(new Buffer(arr.slice(0,44)))
+                    console.log('respond')
+                    console.log(new Buffer(arr.slice(0,44)))
+                    console.log(new Buffer(arr.slice(44)))
 
                     const writeRequestLength = arr[48]
                     const writeRequest = arr.slice(50, 50 + writeRequestLength)
@@ -117,20 +121,28 @@ class LogixListener extends EventEmitter{
 
 function parseIncomingData(incomingData){
 
+    console.log(new Buffer(incomingData.writeRequest))
+    const tagNameLength = incomingData.writeRequest[3]
+    const tagNameArr = incomingData.writeRequest.slice(4, 4 + tagNameLength)
+
     let result = {
-        senderAddress: incomingData.remoteAddress,
+        senderAddress: incomingData.address,
         tag: new LogixTag('tagName', DataType.DINT)
     }
+
+    result.tag.name = new Buffer(tagNameArr).toString()
 
     const len = incomingData.writeRequest[1]
     const dataTypePosition = (len * 2) + 2
     const dataType = incomingData.writeRequest[dataTypePosition]
 
     if (dataType === 0xa0){
-
+        console.log(dataType)
         const extDataType = incomingData.writeRequest.slice(dataTypePosition,dataTypePosition + 4)
-        if (extDataType === [0x0a, 0x00, 0x00, 0x00] || extDataType === [0x0a, 0x00, 0x00, 0x00]){
 
+        if (extDataType[0] === 0xa0 && extDataType[1] === 0x02 && extDataType[2] === 0xce && extDataType[3] === 0x0f ||
+            extDataType[0] === 0xa0 && extDataType[1] === 0x02 && extDataType[2] === 0xdb && extDataType[3] === 0x63){
+            console.log(extDataType)
             result.tag.dataType = DataType.STRING
 
             const dataArr = [incomingData.writeRequest[dataTypePosition], incomingData.writeRequest[dataTypePosition + 1], incomingData.writeRequest[dataTypePosition + 2], incomingData.writeRequest[dataTypePosition + 3]]
@@ -200,7 +212,7 @@ function parseIncomingData(incomingData){
 
         }
 
-        result.tag.set(parsedDataValues)
+        result.tag.setValue(parsedDataValues)
         result.tag.length = parsedDataValues.length
         result.tag.status = 1
     }
