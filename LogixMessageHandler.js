@@ -8,7 +8,7 @@ let {LogixTag, DataType} = require('./LogixTag')
  * data parameter is sent to this process is the parsed data that is received in LogixMessageListener
  * data parameter is an object that contains ip address of the sender and a LogixTag with the result data of the
  * received message
- * do not remove the process.exit() from end of event as this will kill the process once work is completed.
+ * make sure to add process.exit() to the end of event as this will kill the process once work is completed.
  */
 
 process.on('message', (data) => {
@@ -17,16 +17,7 @@ process.on('message', (data) => {
      * your code starts here
      */
 
-
-
-    console.log(data)
-    console.log('here is the response in a separate thread')
-
-    /**
-     * end of your code
-     */
-
-
+    //console.log('here is the response in a separate thread')
 
     setTimeout(()=>{
 
@@ -39,11 +30,19 @@ process.on('message', (data) => {
 
         controller.on('connected', ()=>{
             controller.writeTag(tag)
-            console.log(tag)
+            // console.log(tag)
             process.exit()
         })
 
     }, 2000)
+
+    /**
+     * end of your code
+     */
+
+
+
+
 
     // process.exit()
 

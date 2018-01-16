@@ -77,8 +77,7 @@ class LogixTag extends EventEmitter{
 
 
         let data = EIP.Build_EIP_CIP_Header(this.controller, this.createWriteRequest())
-        console.log(new Buffer(this.createWriteRequest()))
-        console.log(data)
+
         this.controller.connection.write(data.writeData)
     }
 

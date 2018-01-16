@@ -69,10 +69,6 @@ class LogixListener extends EventEmitter{
                  */
                 if (eipRequest === response.sendRRData) {
 
-                    console.log(data.slice(0, 44))
-                    console.log(data.slice(44))
-
-
                     let arr = [...data]
 
                     arr[2] = 0x14
@@ -87,9 +83,6 @@ class LogixListener extends EventEmitter{
 
                     //send response
                     socket.write(new Buffer(arr.slice(0,44)))
-                    console.log('respond')
-                    console.log(new Buffer(arr.slice(0,44)))
-                    console.log(new Buffer(arr.slice(44)))
 
                     const writeRequestLength = arr[48]
                     const writeRequest = arr.slice(50, 50 + writeRequestLength)
@@ -121,7 +114,6 @@ class LogixListener extends EventEmitter{
 
 function parseIncomingData(incomingData){
 
-    console.log(new Buffer(incomingData.writeRequest))
     const tagNameLength = incomingData.writeRequest[3]
     const tagNameArr = incomingData.writeRequest.slice(4, 4 + tagNameLength)
 
@@ -137,7 +129,7 @@ function parseIncomingData(incomingData){
     const dataType = incomingData.writeRequest[dataTypePosition]
 
     if (dataType === 0xa0){
-        console.log(dataType)
+
         const extDataType = incomingData.writeRequest.slice(dataTypePosition,dataTypePosition + 4)
 
         if (extDataType[0] === 0xa0 && extDataType[1] === 0x02 && extDataType[2] === 0xce && extDataType[3] === 0x0f ||
@@ -146,12 +138,11 @@ function parseIncomingData(incomingData){
             result.tag.dataType = DataType.STRING
 
             const dataArr = [incomingData.writeRequest[dataTypePosition], incomingData.writeRequest[dataTypePosition + 1], incomingData.writeRequest[dataTypePosition + 2], incomingData.writeRequest[dataTypePosition + 3]]
-            console.log(dataArr)
+
             let stringLengthPointer = dataTypePosition + 6
             let sl = [incomingData.writeRequest[stringLengthPointer], incomingData.writeRequest[stringLengthPointer + 1], incomingData.writeRequest[stringLengthPointer + 2], incomingData.writeRequest[stringLengthPointer + 3]]
             let stringLength = ((sl[3] << 24) + (sl[2] << 16) + (sl[1] << 8) + sl[0])
-            console.log(sl)
-            console.log(`string length = ${stringLength}`)
+
             let str = ""
             for (let i = stringLengthPointer + 4; i < stringLengthPointer + 4 + stringLength; i++){
                 str += String.fromCharCode(incomingData.writeRequest[i])

@@ -38,8 +38,6 @@ class LogixController extends EventEmitter{
 
         this.connection.on('data', (data) => {
 
-            console.log(data)
-
             let arr = [...data]
             if (arr[0] === 0x65){
                 this.sessionHandle = arr.slice(4,8)
@@ -57,16 +55,9 @@ class LogixController extends EventEmitter{
 
                 this.isConnected = true
                 this.emit('connected')
-                // let tag = new LogixTag("rate")
-                //
-                // this.connection.write(this.readTag(tag.name))
-
 
             }
             if (arr[0] === 0x70){
-
-                console.log(data.slice(0, 40))
-                console.log(data.slice(40))
 
                 let pointer = 0
                 for (let i in arr){
