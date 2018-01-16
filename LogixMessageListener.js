@@ -2,6 +2,8 @@ const net = require('net')
 const { fork } = require('child_process')
 const binary = require('./binaryConverter')
 const EventEmitter = require('events')
+const { LogixTag } = require('./LogixTag')
+const { DataType } = require('./Util')
 
 const response = {
     sessionRegister: 0x65,
@@ -18,14 +20,14 @@ class LogixListener extends EventEmitter{
         this.server = net.createServer((socket) => {
             socket.on('data', (data) => {
 
-                console.log(data)
+                const eipRequest = data[0]
 
                 /**
                  * plc sending ListServices request with 0x04 in first byte
                  * not required in all processors
                  * from CIP Network Library Vol 2 section 2-4.6
                  */
-                if (data[0] === response.listServices){
+                if (eipRequest === response.listServices){
 
                     let receiveArr = [...data]
                     receiveArr[2] = 26
@@ -45,7 +47,7 @@ class LogixListener extends EventEmitter{
                  * generate a 4 byte session handle and return to requesting device in words 4-7.
                  * the rest of the return is echoing back what is received.
                  */
-                if (data[0] === response.sessionRegister) {
+                if (eipRequest === response.sessionRegister) {
 
                     const sessionHandle = binary.ConvertIntTo4BytesLittleEndian(Math.floor((Math.random() * 63000) + 1))
 
@@ -66,7 +68,7 @@ class LogixListener extends EventEmitter{
                  * word 48 is the length of the complete write request
                  * word 50 begins the write request Publication 1756-PM020A-EN-P Logix5000 DAta Access page 22
                  */
-                if (data[0] === response.sendRRData) {
+                if (eipRequest === response.sendRRData) {
 
                     console.log(data.slice(0, 44))
                     console.log(data.slice(44))
@@ -96,23 +98,134 @@ class LogixListener extends EventEmitter{
                      * return data is sent to new process along with the address and port
                      * of the plc
                      */
+                    const result = parseIncomingData({writeRequest: writeRequest, address: socket.remoteAddress, port: socket.remotePort})
                     const forked = fork('./LogixMessageHandler.js')
-                    forked.send({writeRequest: writeRequest, address: socket.remoteAddress, port: socket.remotePort})
+                    forked.send(result)
                 }
 
             })
 
             socket.on('error', (err) => {
-                this.emit('mofo', err)
+                this.emit('error', err)
             })
-
-
 
         })
 
 
     }
 
+}
+
+function parseIncomingData(incomingData){
+
+    let result = {
+        senderAddress: incomingData.remoteAddress,
+        tag: new LogixTag('tagName', DataType.DINT)
+    }
+
+    const len = incomingData.writeRequest[1]
+    const dataTypePosition = (len * 2) + 2
+    const dataType = incomingData.writeRequest[dataTypePosition]
+
+    if (dataType === 0xa0){
+
+        const extDataType = incomingData.writeRequest.slice(dataTypePosition,dataTypePosition + 4)
+        if (extDataType === [0x0a, 0x00, 0x00, 0x00] || extDataType === [0x0a, 0x00, 0x00, 0x00]){
+
+            result.tag.dataType = DataType.STRING
+
+            const dataArr = [incomingData.writeRequest[dataTypePosition], incomingData.writeRequest[dataTypePosition + 1], incomingData.writeRequest[dataTypePosition + 2], incomingData.writeRequest[dataTypePosition + 3]]
+            console.log(dataArr)
+            let stringLengthPointer = dataTypePosition + 6
+            let sl = [incomingData.writeRequest[stringLengthPointer], incomingData.writeRequest[stringLengthPointer + 1], incomingData.writeRequest[stringLengthPointer + 2], incomingData.writeRequest[stringLengthPointer + 3]]
+            let stringLength = ((sl[3] << 24) + (sl[2] << 16) + (sl[1] << 8) + sl[0])
+            console.log(sl)
+            console.log(`string length = ${stringLength}`)
+            let str = ""
+            for (let i = stringLengthPointer + 4; i < stringLengthPointer + 4 + stringLength; i++){
+                str += String.fromCharCode(incomingData.writeRequest[i])
+            }
+
+            result.tag.value = str
+            result.tag.length = 1
+            result.tag.status = 1
+        }
+    }else{
+
+        const dataSize = getDataSize(dataType)
+        const dataLength = incomingData.writeRequest[dataTypePosition + 2]
+        const dataValues = incomingData.writeRequest.slice(dataTypePosition + 4, dataTypePosition + 4 + (dataLength * dataSize))
+
+        let parsedDataValues = []
+
+        for (let i = 0; i < dataValues.length; i ++){
+
+            switch (dataType){
+
+                case 0xc1: //bool
+                    result.tag.dataType = DataType.BOOL
+                    break
+                case 0xc2: //sint
+                    result.tag.dataType = DataType.SINT
+                    parsedDataValues.push(dataValues[i])
+                    break
+                case 0xc3: //int
+                    if (i % 2 === 0){
+                        parsedDataValues.push(binary.ConvertTwoBytesLittleEndianToInt(dataValues.slice(i, i + 2)))
+                    }
+                    result.tag.dataType = DataType.INT
+                    break
+                case 0xc4: //dint
+                    if (i % 4 === 0){
+                        parsedDataValues.push(binary.ConvertFourBytesLittleEndianToInt(dataValues.slice(i, i + 4)))
+                    }
+                    result.tag.dataType = DataType.DINT
+                    break
+                case 0xca: //real
+                    if (i % 4 === 0){
+                        const floatVal = binary.ConvertFourBytesLittleEndianToInt(dataValues.slice(i, i + 4))
+                        parsedDataValues.push(binary.ConvertHexToFloatingPoint(floatVal))
+                    }
+                    result.tag.dataType = DataType.REAL
+                    break
+                case 0xd3: //dword
+                    result.tag.dataType = DataType.DWORD
+                    break
+                case 0xc5: //lint
+                    if (i % 8 === 0){
+                        parsedDataValues.push(binary.ConvertFourBytesLittleEndianToInt(dataValues.slice(i, i + 8)))
+                    }
+                    result.tag.dataType = DataType.LINT
+                    break
+            }
+
+        }
+
+        result.tag.value = parsedDataValues
+        result.tag.length = parsedDataValues.length
+        result.tag.status = 1
+    }
+
+    return result
+}
+
+function getDataSize(dataType){
+
+    switch (dataType){
+        case 0xc1:
+        case 0xc2:
+            return 1
+        case 0xc3:
+            return 2
+        case 0xc4:
+        case 0xca:
+        case 0xd3:
+            return 4
+        case 0xc5:
+            return 8
+        case 0xa0:
+            return 10
+    }
 }
 
 
