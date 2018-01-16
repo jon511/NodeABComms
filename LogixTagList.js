@@ -1,4 +1,4 @@
-const {DataType} = require('./controller')
+const {DataType} = require('./LogixTag')
 const EIP = require('./EIP')
 const binary = require('./binaryConverter')
 

@@ -1,11 +1,18 @@
 
 const net = require('net')
 const binary = require('./binaryConverter')
-const {Controller, DataType} = require('./controller')
 const {LogixController} = require('./LogixController')
-const {LogixTag} = require('./LogixTag')
+const {LogixTag, DataType} = require('./LogixTag')
 const {LogixTagList} = require('./LogixTagList')
 const { LogixListener } = require('./LogixMessageListener')
+
+
+let tag = new LogixTag('tempTag', )
+tag.setValue(10)
+
+tag.on('dataChanged', () => {
+    console.log('data changed')
+})
 
 
 let l = new LogixController('10.50.201.116', 44818)
@@ -14,6 +21,11 @@ l.connection.setTimeout(5000)
 let slcTag1 = new LogixTag('N199:90', DataType.INT)
 slcTag1.controller = l
 slcTag1.read()
+
+l.autoConnect = true
+l.on('error', (err, cont) => {
+
+})
 
 // let l = new LogixController('10.50.193.55', 44818)
 // l.connect()

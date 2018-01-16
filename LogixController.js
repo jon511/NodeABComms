@@ -26,13 +26,14 @@ class LogixController extends EventEmitter{
         this.originatorSerialNumber = [0x42, 0x00, 0x00, 0x00]
         this.sequenceCounter = 1
         this.offset = 0
+        this.autoConnect = false
 
         this.structIdentifier = []
 
         this.activeTagList = []
 
         this.connection.on('error', (err)=>{
-            console.log(err)
+            this.emit('error', err, this)
         })
 
         this.connection.on('data', (data) => {

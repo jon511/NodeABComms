@@ -1,10 +1,14 @@
-const {DataType} = require('./controller')
+// const {DataType} = require('./Util')
 const EIP = require('./EIP')
 const binary = require('./binaryConverter')
+const EventEmitter = require('events')
 
-class LogixTag{
+let oldValue = undefined
+
+class LogixTag extends EventEmitter{
 
     constructor(name, dataType){
+        super()
         this.name = name
         this.dataType = dataType
         this.controller = undefined
@@ -14,6 +18,14 @@ class LogixTag{
         this.errorCode = 0
         this.errorString = ''
         this.cipSequenceID = 0
+    }
+
+    setValue(val){
+
+        if (this.value !== val){
+            this.value = val
+            this.emit('dataChanged')
+        }
     }
 
     read(){
@@ -115,5 +127,16 @@ class LogixTag{
     }
 }
 
-module.exports = {LogixTag}
+const DataType = {
+    BOOL: 0xc1,
+    SINT: 0xc2,
+    INT: 0xc3,
+    DINT: 0xc4,
+    REAL: 0xca,
+    DWORD: 0xd3,
+    LINT: 0xc5,
+    STRING: 0x0a,
+}
+
+module.exports = {LogixTag, DataType}
 

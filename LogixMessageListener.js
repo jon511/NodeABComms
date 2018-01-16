@@ -2,8 +2,7 @@ const net = require('net')
 const { fork } = require('child_process')
 const binary = require('./binaryConverter')
 const EventEmitter = require('events')
-const { LogixTag } = require('./LogixTag')
-const { DataType } = require('./Util')
+const { LogixTag, DataType } = require('./LogixTag')
 
 const response = {
     sessionRegister: 0x65,
@@ -146,7 +145,7 @@ function parseIncomingData(incomingData){
                 str += String.fromCharCode(incomingData.writeRequest[i])
             }
 
-            result.tag.value = str
+            result.tag.setValue(str)
             result.tag.length = 1
             result.tag.status = 1
         }
@@ -201,7 +200,7 @@ function parseIncomingData(incomingData){
 
         }
 
-        result.tag.value = parsedDataValues
+        result.tag.set(parsedDataValues)
         result.tag.length = parsedDataValues.length
         result.tag.status = 1
     }
