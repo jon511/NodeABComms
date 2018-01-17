@@ -276,9 +276,9 @@ function Build_EIP_CIP_Header(controller, tagIOI){
 
     let eipHeaderFrame = eipCommand.concat(eipLength, eipSessionHandle, eipStatus, eipContext, eipOptions, eipInterfaceHandle, eipTimeout, eipItemCount, eipItem1ID, eipItem1Length,eipItem1, eipItem2ID, eipItem2Length, eipSequence)
 
-    return {sequenceID: eipSequence, writeData: new Buffer(eipHeaderFrame.concat(tagIOI))}
+    // return  new Buffer(eipHeaderFrame.concat(tagIOI))
 
-    // return new Buffer(eipHeaderFrame.concat(tagIOI))
+    return new Buffer(eipHeaderFrame.concat(tagIOI))
 }
 
 module.exports = {BuildRegisterSession, ForwardOpenPacket, Build_EIP_CIP_Header}

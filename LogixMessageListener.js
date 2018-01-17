@@ -11,7 +11,8 @@ const response = {
 }
 
 /**
- *
+ *listens for messages sent from plc using Ethernet/IP protocol
+ * used for all controllogix and compactlogix plcs
  */
 class LogixListener extends EventEmitter{
     constructor(){
@@ -94,7 +95,7 @@ class LogixListener extends EventEmitter{
                      * return data is sent to new process along with the address and port
                      * of the plc
                      */
-                    const result = parseIncomingData({writeRequest: writeRequest, address: socket.remoteAddress, port: socket.remotePort})
+                    const result = parseIncomingData({writeRequest: writeRequest, address: socket.remoteAddress})
                     const forked = fork('./LogixMessageHandler.js')
                     forked.send(result)
                 }
@@ -134,7 +135,7 @@ function parseIncomingData(incomingData){
 
         if (extDataType[0] === 0xa0 && extDataType[1] === 0x02 && extDataType[2] === 0xce && extDataType[3] === 0x0f ||
             extDataType[0] === 0xa0 && extDataType[1] === 0x02 && extDataType[2] === 0xdb && extDataType[3] === 0x63){
-            console.log(extDataType)
+
             result.tag.dataType = DataType.STRING
 
             const dataArr = [incomingData.writeRequest[dataTypePosition], incomingData.writeRequest[dataTypePosition + 1], incomingData.writeRequest[dataTypePosition + 2], incomingData.writeRequest[dataTypePosition + 3]]
@@ -148,7 +149,7 @@ function parseIncomingData(incomingData){
                 str += String.fromCharCode(incomingData.writeRequest[i])
             }
 
-            result.tag.setValue(str)
+            result.tag.value(str)
             result.tag.length = 1
             result.tag.status = 1
         }
@@ -203,7 +204,7 @@ function parseIncomingData(incomingData){
 
         }
 
-        result.tag.setValue(parsedDataValues)
+        result.tag.value(parsedDataValues)
         result.tag.length = parsedDataValues.length
         result.tag.status = 1
     }

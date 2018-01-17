@@ -7,7 +7,6 @@ class LogixTagList{
     constructor(){
         this.controller = undefined
         this.scanTime = 1000
-
         this.status = 0
         this.tags = []
         this.Scan

@@ -65,6 +65,16 @@ const ConvertTwoBytesLittleEndianToInt = (bytes) => {
     return bytes[0] + (bytes[1] << 8)
 }
 
+/**
+ * Converts byte array with length of 8 to int
+ * @param bytes {array}
+ * @returns {int}
+ */
+const ConvertEightBytesLittleEndianToInt = (bytes) => {
+
+    return bytes[0] + (bytes[1] << 8) + (bytes[2] << 16) + (bytes[3] << 24) + (bytes[4] << 32) + (bytes[4] << 40) + (bytes[4] << 48) + (bytes[4] << 56)
+}
+
 
 module.exports = {
     ConvertHexToFloatingPoint,
@@ -72,4 +82,5 @@ module.exports = {
     ConvertIntTo4BytesLittleEndian,
     ConvertFourBytesLittleEndianToInt,
     ConvertTwoBytesLittleEndianToInt,
+    ConvertEightBytesLittleEndianToInt,
 }

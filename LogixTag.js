@@ -3,8 +3,6 @@ const EIP = require('./EIP')
 const binary = require('./binaryConverter')
 const EventEmitter = require('events')
 
-let oldValue = undefined
-
 class LogixTag extends EventEmitter{
 
     constructor(name, dataType){
@@ -13,40 +11,53 @@ class LogixTag extends EventEmitter{
         this.dataType = dataType
         this.controller = undefined
         this.status = 0
-        this.value = 0
+        this._value = 0
         this.length = 1
         this.errorCode = 0
         this.errorString = ''
-        this.cipSequenceID = 0
     }
 
-    setValue(val){
+    set value(val){
 
-        if (this.value !== val){
-            this.value = val
-            this.emit('dataChanged')
+        if (this._value !== val){
+            this._value = val
+            this.emit('valueChanged')
         }
+    }
+
+    get value(){
+        return this._value
     }
 
     read(){
 
         if (this.controller === undefined){
+            this.emit('error', 'controller not assigned to tag')
             return 'tag controller not defined'
         }
 
         if (!this.controller.isConnected){
-            //TODO: if controller is not connected attempt connection.
+
+            this.emit('error', 'controller not connected')
+            return
         }
+
+        // if (this.controller.activeReadTag !== undefined){
+        //     console.log('read busy')
+        //     return
+        // }
 
         //TODO: verify tag name matches allen bradley tag names
 
 
-        let data = EIP.Build_EIP_CIP_Header(this.controller, this.createReadRequest())
+        const data = EIP.Build_EIP_CIP_Header(this.controller, this.createReadRequest())
 
-        this.cipSequenceID = binary.ConvertTwoBytesLittleEndianToInt(data.sequenceID)
-        console.log(data.writeData)
-        this.controller.connection.write(data.writeData)
-        this.controller.activeTagList.push(this)
+        let readReqObject = {
+            tag: this,
+            writeData: data
+        }
+
+        this.controller.addSendRequest(readReqObject)
 
     }
 
@@ -76,9 +87,14 @@ class LogixTag extends EventEmitter{
         //TODO: verification before writing tag
 
 
-        let data = EIP.Build_EIP_CIP_Header(this.controller, this.createWriteRequest())
-
-        this.controller.connection.write(data.writeData)
+        const data = EIP.Build_EIP_CIP_Header(this.controller, this.createWriteRequest())
+        console.log(data.slice(data.length - 4))
+        let requestObject = {
+            tag: this,
+            writeData: data
+        }
+        this.controller.addSendRequest(requestObject)
+        // this.controller.connection.write(data.writeData)
     }
 
     createWriteRequest(){
