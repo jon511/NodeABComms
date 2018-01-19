@@ -225,6 +225,7 @@ function buildCIPForwardOpen(controller){
 }
 
 function buildEIPSendDataHeader(controller, frameLen){
+
     let eipCommand = [0x6f, 0x00]
     let eipLength = binary.ConvertIntTo2BytesLittleEndian(16 + frameLen)
     let eipSessionHandle = controller.sessionHandle

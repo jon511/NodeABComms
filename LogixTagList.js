@@ -116,7 +116,7 @@ class LogixTagList{
         let data = EIP.Build_EIP_CIP_Header(this.controller, sendData)
 
         this.cipSequenceID = binary.ConvertTwoBytesLittleEndianToInt(data.sequenceID)
-        console.log(data.writeData)
+
         this.controller.connection.write(data.writeData)
 
     }

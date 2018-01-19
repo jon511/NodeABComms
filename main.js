@@ -1,62 +1,72 @@
 const ABComms = require('./ABComms')
+const events = require('./EventHandler')
 
 let controller = new ABComms.LogixController('10.50.193.55')
+// let controller = new ABComms.LogixController('10.50.71.160')
+controller.timeout = 3000
 controller.connect()
+controller.sendReadRequest()
+
+events.on('error', (err, controller)=>{
+    console.log('error')
+    console.log(err)
+
+})
+
+
+events.on('timeout', (con) => {
+    console.log('timeout')
+
+})
+
+events.on('close', () => {
+    console.log('closed')
+    controller.connect()
+    controller.timeout = 3000
+    console.log(controller)
+})
 
 let tag = new ABComms.LogixTag('rate', ABComms.DataType.DINT)
 tag.controller = controller
+tag.userData = {one: 'one', two: 'two', three: 3}
 
-let tag2 = new ABComms.LogixTag('rateDint', ABComms.DataType.DINT)
+let tag2 = new ABComms.LogixTag('testLongSint', ABComms.DataType.SINT)
 tag2.controller = controller
-tag2.value = 2090
-tag2.length = 1
+
+let tempArr = []
+
+for (let i = 0; i < 1000; i++){
+    tempArr.push(i % 255)
+}
+
+tag2.value = tempArr
+// tag2.value = 10
+tag2.length = 1000
 let tag3 = new ABComms.LogixTag('rateInt', ABComms.DataType.INT)
 tag3.controller = controller
+tag3.length = 1
+tag3.value = 10
 
-controller.on('connected', () => {
+events.on('connected', () => {
     console.log('connected')
-    tag.read()
-    tag2.write()
-    tag3.read()
+    // tag.read()
+    tag2.read()
+    // tag2.write()
 })
 
-controller.on('readComplete', (result) => {
-    console.log(result)
-    console.log(tag.value)
-    console.log(tag2.value)
-    console.log(tag3.value)
-    // console.log(controller.activeReadTag)
+events.on('valueChanged', (thisTag) =>{
+    console.log(`${thisTag.name} value changed to ${thisTag.value}`)
 })
 
-tag.on('readComplete', ()=>{
+events.on('readComplete', (thisTag)=>{
     console.log('tag read complete')
-    console.log(tag.value)
+    console.log(thisTag.name)
+    console.log(thisTag.value)
+    console.log(thisTag.length)
+    console.log(thisTag.value.length)
 })
 
-tag2.on('readComplete', ()=>{
-    console.log('tag2 read complete')
-    console.log(tag2.value)
-})
-
-tag2.on('writeComplete', () => {
-    console.log('tag2 write complete')
-    console.log(tag2)
-})
-
-tag3.on('readComplete', ()=>{
-    console.log('tag 3 read complete')
-    console.log(tag3.value)
-})
-
-tag.on('error', (err) => {
-    console.log(err)
-})
-
-tag2.on('error', (err) => {
-    console.log(err)
-})
-
-tag3.on('error', (err) => {
-    console.log('tag 3 error')
-    console.log(err)
+events.on('writeComplete', (thisTag) =>{
+    console.log('tag write complete')
+    console.log(thisTag.name)
 })
