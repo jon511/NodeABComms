@@ -30,24 +30,29 @@ let tag = new ABComms.LogixTag('rate', ABComms.DataType.DINT)
 tag.controller = controller
 tag.userData = {one: 'one', two: 'two', three: 3}
 
-let tag2 = new ABComms.LogixTag('testLongSint', ABComms.DataType.SINT)
+let tag2 = new ABComms.LogixTag('testBoolArray2', ABComms.DataType.DWORD)
 tag2.controller = controller
 
 let tempArr = []
 
-for (let i = 0; i < 1000; i++){
-    tempArr.push(i % 255)
+for (let i = 0; i < 128; i++){
+    if (i % 2 === 0){
+        tempArr.push(true)
+    }else{
+        tempArr.push(false)
+    }
 }
 
 tag2.value = tempArr
 // tag2.value = 10
-tag2.length = 1000
+tag2.length = 1
 let tag3 = new ABComms.LogixTag('rateInt', ABComms.DataType.INT)
 tag3.controller = controller
 tag3.length = 1
 tag3.value = 10
 
 events.on('connected', () => {
+
     console.log('connected')
     // tag.read()
     tag2.read()
@@ -63,7 +68,6 @@ events.on('readComplete', (thisTag)=>{
     console.log(thisTag.name)
     console.log(thisTag.value)
     console.log(thisTag.length)
-    console.log(thisTag.value.length)
 })
 
 events.on('writeComplete', (thisTag) =>{

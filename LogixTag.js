@@ -34,7 +34,7 @@ class LogixTag{
         switch (this.dataType){
             case DataType.BOOL:
             case DataType.SINT:
-                return 476
+                return 200
             case DataType.INT:
                 return 100
             case DataType.DINT:
@@ -81,9 +81,6 @@ class LogixTag{
 
     read(){
 
-        // let count = this.length
-        // console.log(this.name)
-        // console.log(this.length)
         if (this.controller === undefined){
             emitter.emit('error', 'controller not assigned to tag')
             return 'tag controller not defined'
@@ -97,14 +94,12 @@ class LogixTag{
 
         //TODO: verify tag name matches allen bradley tag names
 
-        // let maxMessageSize = 0
-        //
         if (this.length > 1){
 
             for (let i = 0; i < this.length; i++){
 
                 if (i % this.fragmentedReadSize === 0){
-                    console.log(i)
+
                     const data = EIP.Build_EIP_CIP_Header(this.controller, this.createFragmentedReadRequest(i))
 
                     let reqObject = {
@@ -115,23 +110,7 @@ class LogixTag{
 
                     this.controller.addSendRequest(reqObject)
                 }
-
-
-                // if (i % this.fragmentedReadSize === 0){
-                //
-                //     const data = EIP.Build_EIP_CIP_Header(this.controller, this.createFragmentedReadRequest(i))
-                //
-                //     let reqObject = {
-                //         tag: this,
-                //         writeData: data
-                //
-                //     }
-                //
-                //     this.controller.addSendRequest(reqObject)
-                // }
             }
-
-
 
         }else{
 
@@ -147,8 +126,6 @@ class LogixTag{
         }
 
 
-
-
     }
 
     createReadRequest(){
@@ -162,7 +139,7 @@ class LogixTag{
             requestPath.push(0x00)
         }
         let requestPathSize = requestPath.length / 2
-        let requestData = [0x01, 0x00]
+        let requestData = [0x1, 0x00]
 
         return requestService.concat(requestPathSize, requestPath, requestData)
 
@@ -185,7 +162,7 @@ class LogixTag{
         let endPos = (tempArr.length < this.fragmentedWriteSize) ? tempArr.length : this.fragmentedWriteSize
 
         let startPosition = binary.ConvertIntTo4BytesLittleEndian(startPos * this.dataTypeSize)
-        console.log(startPos)
+
         return requestService.concat(requestPathSize, requestPath, requestData, startPosition)
     }
 
@@ -211,7 +188,7 @@ class LogixTag{
                         writeData: data
 
                     }
-
+                    console.log(new Buffer(reqObject.writeData))
                     this.controller.addSendRequest(reqObject)
                 }
             }
@@ -306,7 +283,7 @@ class LogixTag{
 
         let tempArr = this.value.slice(pos)
         let endPos = (tempArr.length < this.fragmentedWriteSize) ? tempArr.length : this.fragmentedWriteSize
-
+        let tempDword = []
         for (let i = pos; i < pos + endPos; i++){
 
 
@@ -324,7 +301,11 @@ class LogixTag{
                     //TODO: calculate floating point to byte array
                     break
                 case DataType.DWORD:
-                    //TODO: calculate dword data type to byte array
+
+                    tempDword.push((this.value[i]) ? 1 : 0)
+
+                    console.log(tempDword)
+
                     break
                 case DataType.LINT:
                     //TODO: calculate LINT to 8 byte array
@@ -333,7 +314,7 @@ class LogixTag{
             }
 
         }
-
+        // console.log(writeValue.length)
         // console.log(new Buffer(requestService.concat(requestPathSize, requestPath, requestDataType, requestDataElements, requestDataOffset)))
         return requestService.concat(requestPathSize, requestPath, requestDataType, requestDataElements, requestDataOffset, writeValue)
     }

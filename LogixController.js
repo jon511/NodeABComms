@@ -38,7 +38,8 @@ class LogixController{
         })
 
         this.connection.on('data', (data) => {
-            // console.log(data)
+            // console.log('on')
+            // console.log(data.slice(44))
             let arr = [...data]
             if (arr[0] === 0x65){
                 this.sessionHandle = arr.slice(4,8)
@@ -72,7 +73,7 @@ class LogixController{
                      * see Publication 1756-PM020A-EN-P - October 2009 Logix5000 Data Access page 18
                      */
                     if (arr[i] === replyService.ReadTagService){
-                        // const result = arr.slice(i)
+                        const result = arr.slice(i)
                         action = 'read'
                         if (result[2] !== 0){
                             //error code return, write error to tag and break
@@ -277,7 +278,7 @@ class LogixController{
             this.activeReadTag = rr.tag
             this.connectionBusy = true
             this.connection.write(rr.writeData)
-            console.log(rr.writeData.slice(44))
+            // console.log(rr.writeData.slice(44))
         }else{
             if (this.readRequestList.length > 0){
 
@@ -297,87 +298,104 @@ class LogixController{
     parseReadReturn(data){
 
         switch (data[0]){
+            case DataType.BOOL:
+                return (data[2] === 0) ? false : true
             case DataType.SINT:
                 return data[2]
-                break
             case DataType.INT:
                 return binary.ConvertTwoBytesLittleEndianToInt(data.slice(2))
-                break
             case DataType.DINT:
                 return binary.ConvertFourBytesLittleEndianToInt(data.slice(2))
-
-                break
             case DataType.REAL:
                 const floatVal = binary.ConvertFourBytesLittleEndianToInt(data.slice(2))
                 return binary.ConvertHexToFloatingPoint(floatVal)
-                break
             case DataType.DWORD:
-                //add conversion of dword
-                break
+                const newData = data.slice(2)
+                let retData = []
+                let tempReturn = []
+                for (let i = 0; i < newData.length; i++){
+                    let pointer = i % 4
+                    let tempBoolArr = []
+                    for (let j = 0; j < 8; j++){
+                        tempBoolArr.push((((newData[i] >> j) & 0x01) === 1) ? true : false)
+                    }
+                    tempReturn = tempReturn.concat(tempBoolArr)
+                    if (pointer === 3) {
+                        retData = tempReturn
+                        tempReturn = []
+                    }
+
+                }
+                return retData
+
             case DataType.LINT:
                 return binary.ConvertEightBytesLittleEndianToInt(data.slice(2))
-                break
 
         }
     }
 
     parseFragmentedReadReturn(data){
+
         const newData = data.slice(2)
-        let dLen = newData.length
         let retData = []
+
         switch (data[0]){
             case DataType.SINT:
 
                 for (let i = 0; i < newData.length; i++){
                     retData.push(newData[i])
                 }
-
                 return retData
-                break
+
             case DataType.INT:
-                // return binary.ConvertTwoBytesLittleEndianToInt(data.slice())
-                dLen = newData.length / 2
-                retData = []
-                for (let i = 0; i < newData.length; i++){
-                    if (i % 2 === 0){
-                        // console.log(i)
-                        retData.push(binary.ConvertTwoBytesLittleEndianToInt(newData.slice(i, i + 2)))
-                    }
 
+                for (let i = 0; i < newData.length; i += 2){
+                    retData.push(binary.ConvertTwoBytesLittleEndianToInt(newData.slice(i, i + 2)))
                 }
-
                 return retData
-                break
-            case DataType.DINT:
 
-                dLen = newData.length / 4
-                retData = []
+            case DataType.DINT:
 
                 for (let i = 0; i < newData.length; i += 4){
                     retData.push(binary.ConvertFourBytesLittleEndianToInt(newData.slice(i, i + 4)))
                 }
+                return retData
 
-                // for (let i = 0; i < newData.length; i++){
-                //     if (i % 4 === 0){
-                //         // console.log(i)
-                //
-                //     }
-                //
-                // }
+            case DataType.REAL:
+
+                for (let i = 0; i < newData.length; i += 4){
+                    let floatVal = binary.ConvertFourBytesLittleEndianToInt(newData.slice(i, i + 4))
+                    retData.push(binary.ConvertHexToFloatingPoint(floatVal).toFixed(3))
+
+                }
 
                 return retData
 
-                break
-            case DataType.REAL:
-                const floatVal = binary.ConvertFourBytesLittleEndianToInt(data.slice(2))
-                return binary.ConvertHexToFloatingPoint(floatVal)
-                break
             case DataType.DWORD:
-                //add conversion of dword
-                break
+
+                let tempReturn = []
+                for (let i = 0; i < newData.length; i++){
+                    let pointer = i % 4
+                    let tempBoolArr = []
+                    for (let j = 0; j < 8; j++){
+                        tempBoolArr.push((((newData[i] >> j) & 0x01) === 1) ? true : false)
+                    }
+                    tempReturn = tempReturn.concat(tempBoolArr)
+                    if (pointer === 3) {
+                        retData.push(tempReturn)
+                        tempReturn = []
+                    }
+
+                }
+                return retData
+
             case DataType.LINT:
-                return binary.ConvertEightBytesLittleEndianToInt(data.slice(2))
-                break
+
+                for (let i = 0; i < newData.length; i += 8){
+                    // console.log(new Buffer(newData.slice(i, i+8)))
+                    retData.push(binary.ConvertFourBytesLittleEndianToInt(newData.slice(i, i + 8)))
+                }
+                return retData
 
         }
     }
