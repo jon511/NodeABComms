@@ -35,7 +35,7 @@ tag2.controller = controller
 
 let tempArr = []
 
-for (let i = 0; i < 128; i++){
+for (let i = 0; i < 32; i++){
     if (i % 2 === 0){
         tempArr.push(true)
     }else{
@@ -43,10 +43,14 @@ for (let i = 0; i < 128; i++){
     }
 }
 
+let tArr = []
+tArr.push(tempArr)
+tArr.push(tempArr)
+
 tag2.value = tempArr
 // tag2.value = 10
 tag2.length = 1
-let tag3 = new ABComms.LogixTag('rateInt', ABComms.DataType.INT)
+let tag3 = new ABComms.LogixTag('rateInt', ABComms.DataType.BOOL)
 tag3.controller = controller
 tag3.length = 1
 tag3.value = 10
@@ -55,8 +59,8 @@ events.on('connected', () => {
 
     console.log('connected')
     // tag.read()
-    tag2.read()
-    // tag2.write()
+    // tag2.read()
+    tag2.write()
 })
 
 events.on('valueChanged', (thisTag) =>{

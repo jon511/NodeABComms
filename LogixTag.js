@@ -231,6 +231,9 @@ class LogixTag{
 
         let writeValue = []
         switch (this.dataType){
+            case DataType.BOOL:
+                writeValue = (this.value) ? [0xff] : [0x00]
+                break
             case DataType.SINT:
                 writeValue = [this.value]
                 break
@@ -249,6 +252,13 @@ class LogixTag{
             case DataType.REAL:
                 break
             case DataType.DWORD:
+                let thisVal = 0
+                for (let j = 0; j < 32; j++){
+                    thisVal = thisVal + ((this.value[j]) ? 1 << j: 0 << j)
+                }
+
+                writeValue = writeValue.concat(binary.ConvertIntTo4BytesLittleEndian(thisVal))
+
                 break
             case DataType.LINT:
                 break
@@ -283,11 +293,14 @@ class LogixTag{
 
         let tempArr = this.value.slice(pos)
         let endPos = (tempArr.length < this.fragmentedWriteSize) ? tempArr.length : this.fragmentedWriteSize
-        let tempDword = []
+
         for (let i = pos; i < pos + endPos; i++){
 
 
             switch (this.dataType){
+                case DataType.BOOL:
+
+                    break
                 case DataType.SINT:
                     writeValue = writeValue.concat([this.value[i]])
                     break
@@ -301,10 +314,11 @@ class LogixTag{
                     //TODO: calculate floating point to byte array
                     break
                 case DataType.DWORD:
-
-                    tempDword.push((this.value[i]) ? 1 : 0)
-
-                    console.log(tempDword)
+                    let thisVal = 0
+                    for (let j = 0; j < 32; j++){
+                        thisVal = thisVal + ((this.value[i][j]) ? 1 << j: 0 << j)
+                    }
+                    writeValue = writeValue.concat(binary.ConvertIntTo4BytesLittleEndian(thisVal))
 
                     break
                 case DataType.LINT:
@@ -314,7 +328,7 @@ class LogixTag{
             }
 
         }
-        // console.log(writeValue.length)
+        console.log(new Buffer(writeValue))
         // console.log(new Buffer(requestService.concat(requestPathSize, requestPath, requestDataType, requestDataElements, requestDataOffset)))
         return requestService.concat(requestPathSize, requestPath, requestDataType, requestDataElements, requestDataOffset, writeValue)
     }
