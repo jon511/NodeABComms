@@ -6,6 +6,12 @@ const emitter = require('./EventHandler')
 class LogixTag{
 
     constructor(name, dataType){
+
+        if (/\s/.test(name) || name[0] === '_' || /\d/.test(name[0]) || name[name.length -1] === '_'){
+            console.log('tag name is invalid.')
+            return
+        }
+
         this.name = name
         this.dataType = dataType
         this.controller = undefined
@@ -343,6 +349,14 @@ const DataType = {
     DWORD: 0xd3,
     LINT: 0xc5,
     STRING: 0xa0,
+    0xc1: 1,
+    0xc2: 1,
+    0xc3: 2,
+    0xc4: 4,
+    0xca: 4,
+    0xd3: 4,
+    0xc5: 8,
+    0xa0: 82,
 }
 
 module.exports = {LogixTag, DataType}

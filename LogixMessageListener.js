@@ -1,8 +1,8 @@
 const net = require('net')
 const { fork } = require('child_process')
 const binary = require('./binaryConverter')
-const EventEmitter = require('events')
 const { LogixTag, DataType } = require('./LogixTag')
+const emitter = require('./EventHandler')
 
 const response = {
     sessionRegister: 0x65,
@@ -14,9 +14,8 @@ const response = {
  *listens for messages sent from plc using Ethernet/IP protocol
  * used for all controllogix and compactlogix plcs
  */
-class LogixListener extends EventEmitter{
+class LogixListener{
     constructor(){
-        super()
         this.server = net.createServer((socket) => {
             socket.on('data', (data) => {
 
@@ -103,11 +102,22 @@ class LogixListener extends EventEmitter{
             })
 
             socket.on('error', (err) => {
-                this.emit('error', err)
+                emitter.emit('error', err)
             })
+
 
         })
 
+        this.server.on('listening', () => {
+            console.log('listening')
+            console.log(this.server.address())
+        })
+
+
+    }
+
+    listen() {
+        this.server.listen()
 
     }
 

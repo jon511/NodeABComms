@@ -2,32 +2,97 @@ const {DataType} = require('./LogixTag')
 const EIP = require('./EIP')
 const binary = require('./binaryConverter')
 
+/**
+ * LogixTagList is a class that is used to groupg any number of tags together for reading and writing of
+ * multiple tags at once.
+ * Proerties:
+ *  name - optional. user defined description of tag list
+ *  controller - controller must be assigned before reading or writing can be performed
+ *  Scsn - used to poll controller tag values of all tag contained in the tag list.
+ *  scanTime - duration (in milliseconds) of poll rate.
+ *  status - scan status returns scan state of tag list.
+ */
 class LogixTagList{
 
     constructor(){
+        this.name = ''
         this.controller = undefined
-        this.scanTime = 1000
-        this.status = 0
-        this.tags = []
+        this.errorCode = int
+        this.error = ""
+        this.status
         this.Scan
+        this._scanTime = 1000
+        this._scanStatus = 0
+        this.tags = []
+
     }
 
+    set scanTime(val){
+        if (val < 100){
+            this._scanTime = 1000
+            console.log(`Scan time cannot be less than 100 milliseconds.`)
+            return
+        }
+
+        this._scanTime = val
+    }
+
+    get scanTime() {
+
+        return this._scanTime
+    }
+
+    get scanStatus() {
+        if (this.Scan){
+            return 1
+        }
+
+        //TODO: check if setInterval is active
+
+        return 0
+    }
+
+    /**
+     * used to add tags to tag list. tags should only be added using the add method and not by
+     * accessing the tag array directly.
+     * @param tag
+     * @returns {string}
+     */
     add(tag){
+
         this.tags.push(tag)
     }
 
+    /**
+     * clears all tags from tag list
+     */
     clear(){
         this.tags = []
     }
 
     startScan(){
-        this.Scan = setInterval(() => this.readAll(), this.scanTime)
+
+        if (this.controller === undefined){
+            console.log(`tag list does not have controller assigned`)
+            return `tag list does not have controller assigned`
+        }
+
+        if (this.tags.length === 0) {
+            console.log(`tag list does not contain any tags. Scan cannot be started`)
+            return `tag list does not contain any tags. Scan cannot be started`
+        }
+
+        this.Scan = setInterval(() => this.readAll(), this._scanTime)
     }
 
     stopScan(){
         clearInterval(this.Scan)
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     readAll(){
 
         if (this.tags.length === 0){
@@ -44,8 +109,9 @@ class LogixTagList{
 
         if (!this.controller.isConnected){
             console.log('tag list controller is not connected')
-            //TODO: if controller is not connected attempt connection.
+            return 'tag list controller is not connected'
         }
+
 
         //TODO: verify tag name matches allen bradley tag names
 
@@ -70,9 +136,13 @@ class LogixTagList{
 
         let data = EIP.Build_EIP_CIP_Header(this.controller, sendData)
 
-        this.cipSequenceID = binary.ConvertTwoBytesLittleEndianToInt(data.sequenceID)
-        console.log(data.writeData)
-        this.controller.connection.write(data.writeData)
+        let reqObject = {
+            tagList: this
+            writeData: data
+
+        }
+
+        this.controller.addSendRequest(reqObject)
 
     }
 
@@ -86,13 +156,13 @@ class LogixTagList{
 
         if (this.controller === undefined){
             console.log('tag list controller not defined')
-            return 'tag controller not defined'
+            return 'tag list controller not defined'
 
         }
 
         if (!this.controller.isConnected){
             console.log('tag list controller is not connected')
-            //TODO: if controller is not connected attempt connection.
+            return 'tag list controler is not connected'
         }
 
         const requestService = [0x0a, 0x02, 0x20, 0x02, 0x24, 0x01]
@@ -115,9 +185,13 @@ class LogixTagList{
 
         let data = EIP.Build_EIP_CIP_Header(this.controller, sendData)
 
-        this.cipSequenceID = binary.ConvertTwoBytesLittleEndianToInt(data.sequenceID)
+        let reqObject = {
+            tag: this.tags,
+            writeData: data
+        }
 
-        this.controller.connection.write(data.writeData)
+        console.log(new Buffer(reqObject.writeData))
+        this.controller.addSendRequest(reqObject)
 
     }
 }
