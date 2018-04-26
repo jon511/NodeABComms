@@ -137,7 +137,7 @@ class LogixTagList{
         let data = EIP.Build_EIP_CIP_Header(this.controller, sendData)
 
         let reqObject = {
-            tagList: this
+            tagList: this.tags,
             writeData: data
 
         }

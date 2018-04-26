@@ -69,6 +69,12 @@ class LogixListener{
                  */
                 if (eipRequest === response.sendRRData) {
 
+                    console.log(`service Code: ${data[40]}`)
+
+                    //check element 40 of the data array
+                    //0x54 means forward open response the data will be sent in the following tx with an id of 0x70
+                    //0x52 means unconnected message and the data is contained in the current transaction
+
                     let arr = [...data]
 
                     arr[2] = 0x14
@@ -95,6 +101,7 @@ class LogixListener{
                      * of the plc
                      */
                     const result = parseIncomingData({writeRequest: writeRequest, address: socket.remoteAddress})
+                    console.log(`socket.remote address = ${socket.remoteAddress}`)
                     const forked = fork('./LogixMessageHandler.js')
                     forked.send(result)
                 }
@@ -117,7 +124,7 @@ class LogixListener{
     }
 
     listen() {
-        this.server.listen()
+        this.server.listen({port:44818, host: '10.50.71.131'})
 
     }
 
@@ -214,7 +221,7 @@ function parseIncomingData(incomingData){
 
         }
 
-        result.tag.value(parsedDataValues)
+        result.tag.value = parsedDataValues
         result.tag.length = parsedDataValues.length
         result.tag.status = 1
     }

@@ -1,5 +1,6 @@
 let {LogixController} = require('./LogixController')
 let {LogixTag, DataType} = require('./LogixTag')
+const emitter = require('./EventHandler')
 
 
 /**
@@ -18,18 +19,20 @@ process.on('message', (data) => {
      */
 
     //console.log('here is the response in a separate thread')
-
+    console.log(data)
     setTimeout(()=>{
-
         let controller = new LogixController(data.senderAddress, 44818)
+        console.log(controller.ipAddress)
         controller.connect()
         let tag = new LogixTag('rateInt', DataType.INT)
-        tag.value = data.tag.value[0]
+        console.log(typeof data.tag.value)
+        tag.value = data.tag._value[0]
         tag.controller = controller
         // controller.writeTag(tag)
 
-        controller.on('connected', ()=>{
+        emitter.on('connected', ()=>{
             controller.writeTag(tag)
+            console.log("controller connected")
             // console.log(tag)
             process.exit()
         })

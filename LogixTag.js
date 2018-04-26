@@ -164,8 +164,8 @@ class LogixTag{
         let requestPathSize = requestPath.length / 2
         let requestData = binary.ConvertIntTo2BytesLittleEndian(this.length)
 
-        let tempArr = this.value.slice(startPos)
-        let endPos = (tempArr.length < this.fragmentedWriteSize) ? tempArr.length : this.fragmentedWriteSize
+        // let tempArr = this.value.slice(startPos)
+        // let endPos = (tempArr.length < this.fragmentedWriteSize) ? tempArr.length : this.fragmentedWriteSize
 
         let startPosition = binary.ConvertIntTo4BytesLittleEndian(startPos * this.dataTypeSize)
 
