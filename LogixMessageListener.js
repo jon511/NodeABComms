@@ -8,7 +8,10 @@ const response = {
     sessionRegister: 0x65,
     sendRRData: 0x6f,
     listServices: 0x04,
+    tempVal: 0x70,
 }
+
+let tempID = []
 
 /**
  *listens for messages sent from plc using Ethernet/IP protocol
@@ -19,6 +22,7 @@ class LogixListener{
         this.server = net.createServer((socket) => {
             socket.on('data', (data) => {
 
+                console.log('some data')
                 const eipRequest = data[0]
 
                 /**
@@ -36,7 +40,8 @@ class LogixListener{
 
                     let arr = receiveArr.concat(responseArr, nameOfService)
 
-                    socket.write(new Buffer(arr))
+                    // socket.write(new Buffer(arr))
+                    socket.write(Buffer.from(arr))
                 }
 
 
@@ -59,6 +64,7 @@ class LogixListener{
                 }
 
 
+
                 /**
                  * plc sending SendRRData Request with 0x6f in first byte
                  * from CIP Network Library Vol 2 section 2-4.7
@@ -70,10 +76,19 @@ class LogixListener{
                 if (eipRequest === response.sendRRData) {
 
                     console.log(`service Code: ${data[40]}`)
-
+                    tempID[0] =data[52]
+                    tempID[1] = data[53]
+                    tempID[2] = data[54]
+                    tempID[3] = data[55]
                     //check element 40 of the data array
                     //0x54 means forward open response the data will be sent in the following tx with an id of 0x70
                     //0x52 means unconnected message and the data is contained in the current transaction
+
+                    if (data[40] === 0x52) {
+
+                    }
+
+
 
                     let arr = [...data]
 
@@ -87,8 +102,52 @@ class LogixListener{
                     arr[42] = 0x00
                     arr[43] = 0x00
 
+                    if (data[40] === 0x54) {
+
+                        arr[2] = 0x2e
+                        arr[3] = 0x00
+
+                        arr[38] = 0x1e
+                        arr[39] = 0x00
+                        arr[40] = 0xd4
+                        arr[41] = 0x00
+                        arr[42] = 0x00
+                        arr[43] = 0x00
+                        arr[44] = 0x00//0x07
+                        arr[45] = 0x00//0x01
+                        arr[46] = 0x00//0x00
+                        arr[47] = 0x00//0x8a
+                        arr[48] = data[52]//0x00
+                        arr[49] = data[53]//0x07
+                        arr[50] = data[54]//0x00
+                        arr[51] = data[55]//0x11
+                        arr[52] = 0x11
+                        arr[53] = 0x00
+                        arr[54] = 0x01
+                        arr[55] = 0x00
+                        arr[56] = 0x02//0x8a
+                        arr[57] = 0xbb//0x76
+                        arr[58] = 0x47//0x1e
+                        arr[59] = 0x60//0xbc
+                        arr[60] = 0xe0//0x40
+                        arr[61] = 0x70//0x82
+                        arr[62] = 0x72//0x1f
+                        arr[63] = 0x00//0x00
+                        arr[64] = 0x01
+                        arr[65] = 0x00
+                        arr[66] = 0x00
+                        arr[67] = 0x00
+                        arr[68] = 0x00
+                        arr[69] = 0x00
+                        //arr[70] = 0x00//
+                        //arr[71] = 0x00//
+
+                        socket.write(Buffer.from(arr.slice(0,70)))
+                    }
+
+
                     //send response
-                    socket.write(new Buffer(arr.slice(0,44)))
+                    // socket.write(Buffer.from(arr.slice(0,44)))
 
                     const writeRequestLength = arr[48]
                     const writeRequest = arr.slice(50, 50 + writeRequestLength)
@@ -100,12 +159,81 @@ class LogixListener{
                      * return data is sent to new process along with the address and port
                      * of the plc
                      */
-                    const result = parseIncomingData({writeRequest: writeRequest, address: socket.remoteAddress})
-                    console.log(`socket.remote address = ${socket.remoteAddress}`)
-                    const forked = fork('./LogixMessageHandler.js')
-                    forked.send(result)
+                    // const result = parseIncomingData({writeRequest: writeRequest, address: socket.remoteAddress})
+                    // console.log(`socket.remote address = ${socket.remoteAddress}`)
+                    // const forked = fork('./LogixMessageHandler.js')
+                    // forked.send(result)
                 }
 
+
+
+                if (eipRequest === response.tempVal) {
+                    let rArr = [...data]
+                    // let rArr = data.slice(0,61)
+                    rArr[2] = 0x25
+
+                    rArr[36] = tempID[0]
+                    rArr[37] = tempID[1]
+                    rArr[38] = tempID[2]
+                    rArr[39] = tempID[3]
+
+                    rArr[42] = 0x11
+                    rArr[43] = 0x00
+                    rArr[44] = data[44]
+                    rArr[45] = 0x00
+                    rArr[46] = 0xcb
+                    rArr[47] = 0x00
+                    rArr[48] = 0x00
+                    rArr[49] = 0x00
+                    rArr[50] = 0x07
+                    rArr[51] = 0x01
+                    rArr[52] = 0x00
+                    rArr[53] = data[55]
+                    rArr[54] = data[56]
+                    rArr[55] = data[57]
+                    rArr[56] = data[58]
+                    rArr[57] = 0x4f
+                    rArr[58] = data[60]
+                    rArr[59] = data[61]
+                    rArr[60] = data[62]
+
+                    socket.write(Buffer.from(rArr.slice(0,61)))
+
+
+                    // console.log(Buffer.from(data.slice(0,10)))
+                    // console.log(Buffer.from(rArr.slice(0,10)))
+                    // console.log(Buffer.from(data.slice(10,20)))
+                    // console.log(Buffer.from(rArr.slice(10,20)))
+                    // console.log(Buffer.from(data.slice(20,30)))
+                    // console.log(Buffer.from(rArr.slice(20,30)))
+                    // console.log(Buffer.from(data.slice(30,40)))
+                    // console.log(Buffer.from(rArr.slice(30,40)))
+                    // console.log(Buffer.from(data.slice(40)))
+                    // console.log(Buffer.from(rArr.slice(40, 61)))
+                    // console.log('end data')
+                    // console.log(Buffer.from(rArr))
+                    // console.log(`temp id - ${tempID}`)
+                    //
+                    // console.log('0x70')
+                    console.log(Buffer.from(rArr.slice(0,20)))
+                    console.log(Buffer.from(rArr.slice(20,40)))
+                    console.log(Buffer.from(rArr.slice(40, 61)))
+                }
+
+
+                
+                // console.log('here is data')
+                // console.log(Buffer.from(data.slice(0,10)))
+                // console.log(Buffer.from(data.slice(10,20)))
+                // console.log(Buffer.from(data.slice(20,30)))
+                // console.log(Buffer.from(data.slice(30,40)))
+                // console.log(Buffer.from(data.slice(40,50)))
+                // console.log(Buffer.from(data.slice(50,60)))
+                // console.log(Buffer.from(data.slice(60,70)))
+                // console.log(Buffer.from(data.slice(70,80)))
+                // console.log(Buffer.from(data.slice(80,90)))
+                // console.log(Buffer.from(data.slice(90,100)))
+                // console.log(Buffer.from(data.slice(100,110)))
             })
 
             socket.on('error', (err) => {
@@ -123,8 +251,8 @@ class LogixListener{
 
     }
 
-    listen() {
-        this.server.listen({port:44818, host: '10.50.71.131'})
+    listen(ipAddress) {
+        this.server.listen({port:44818, host: ipAddress})
 
     }
 
@@ -140,7 +268,7 @@ function parseIncomingData(incomingData){
         tag: new LogixTag('tagName', DataType.DINT)
     }
 
-    result.tag.name = new Buffer(tagNameArr).toString()
+    result.tag.name = Buffer.from(tagNameArr).toString()
 
     const len = incomingData.writeRequest[1]
     const dataTypePosition = (len * 2) + 2

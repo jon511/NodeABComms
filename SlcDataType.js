@@ -12,3 +12,6 @@
 
 //message from slc format
 //DST:SRC:CMD:STS:TNS:FNC:ByteSizeOfData:FileNumber:FileType:ElementNumber:SubelementNumber:DATA
+
+
+
